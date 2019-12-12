@@ -508,7 +508,7 @@ function handler(data, isMerge) {
       var docName = doc.name.split(".")[0];
       var variant = findVariant(docName, data);
       if (!variant) {
-        throw new Error(docName + ": tên file không hợp lệ");
+        throw new Error(docName + ": ten file khong hop le");
       } else {
         if (isMerge) {
           mergeExport(doc, variant, theOutputPath);
@@ -532,12 +532,12 @@ function showDialog() {
   var radio1 = myButtonGroup.add(
     "radiobutton",
     undefined,
-    "Gộp layer - nhanh, file nhẹ, không lỗi, không thể chỉnh sửa"
+    "GOP LAYER - nhanh, file nhe, khong loi, khong the chinh sua"
   );
   var radio2 = myButtonGroup.add(
     "radiobutton",
     undefined,
-    "Giữ layer - chậm, file nặng, dễ gặp lỗi, có thể chỉnh sửa"
+    "GIU LAYER - cham, file nang, de gap loi, co the chinh sua"
   );
   myButtonGroup.add("button", undefined, "OK");
   radio1.value = true;
