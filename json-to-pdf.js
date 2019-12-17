@@ -501,23 +501,26 @@ function main() {
 function handler(data, isMerge) {
   var theOutputPath = Folder.selectDialog("Chon thu muc luu file");
   var docs = app.documents;
-	var message = "";
+  var message = "";
   for (k = 0; k < docs.length; k++) {
     try {
       var doc = docs[k];
       var docName = doc.name.split(".")[0];
       var variant = findVariant(docName, data);
+
       if (!variant) {
         throw new Error(docName + ": ten file khong hop le");
       } else {
         if (isMerge) {
-          mergeExport(doc, variant, theOutputPath);
+          var customeNameError = mergeExport(doc, variant, theOutputPath);
+          throw new Error(customeNameError);
         } else {
-          normalExport(doc, variant, theOutputPath);
+          var customeNameError = normalExport(doc, variant, theOutputPath);
+          throw new Error(customeNameError);
         }
       }
     } catch (error) {
-      message = message + "\n" + error.message;
+      message = message + "\n\n" + error.message;
     }
   }
   alert(message || "Done!");
@@ -564,9 +567,14 @@ function mergeExport(doc, variant, theOutputPath) {
   pdfSaveOptions = new PDFSaveOptions();
   pdfSaveOptions.preserveEditing = false;
   if (textLayers.length == 1) {
+    var nameError = '\n- INVALID PERSONALIZED NAME: ';
     for (i = 0; i < names.length; i++) {
       try {
-        if (names[i]) {
+        var reg = /^[\w\s\d.`~,_=+\-!@#$%^&()]+$/;
+        if (!reg.test(names[i])) {
+          throw new Error(names[i]);
+        }
+        if (names[i] && reg.test(names[i])) {
           var historyNumber = app.activeDocument.historyStates.length - 1;
           textLayers[0].textItem.contents = names[i];
           myDocument.rasterizeAllLayers();
@@ -591,9 +599,10 @@ function mergeExport(doc, variant, theOutputPath) {
           app.purge(PurgeTarget.HISTORYCACHES);
         }
       } catch (error) {
-        throw error;
+        nameError = nameError + "\n   " + error.message;
       }
     }
+    return variant.name + nameError;
   }
 }
 
@@ -605,9 +614,14 @@ function normalExport(doc, variant, theOutputPath) {
 
   pdfSaveOptions = new PDFSaveOptions();
   if (textLayers.length == 1) {
+    var nameError = "\n- INVALID PERSONALIZED NAME: ";
     for (i = 0; i < names.length; i++) {
       try {
-        if (names[i]) {
+        var reg = /^[\w\s\d.`~,_=+\-!@#$%^&()]+$/;
+        if (!reg.test(names[i])) {
+          throw new Error(names[i]);
+        }
+        if (names[i] && reg.test(names[i])) {
           textLayers[0].textItem.contents = names[i];
           myDocument.saveAs(
             new File(
@@ -627,9 +641,10 @@ function normalExport(doc, variant, theOutputPath) {
           );
         }
       } catch (error) {
-        throw error;
+        nameError = nameError + "\n   " + error.message;
       }
     }
+    return variant.name + nameError;
   }
 }
 
@@ -650,8 +665,8 @@ function findVariant(docName, data) {
     if (variant.name == docName) {
       return variant;
     }
-	}
-	return false;
+  }
+  return false;
 }
 
 function getData() {

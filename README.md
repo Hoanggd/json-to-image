@@ -14,3 +14,5 @@
 - Sẽ có 2 lựa chọn là Gộp layer và Giữ layer, mọi người chọn 1 trong 2 rồi bấm OK.
 - 1 cửa sổ mới hiện lên, chọn file `.json` tạo từ omegatics, sau đó chọn thư mục lưu file.
 - Done!
+
+**[>>> Video hướng dẫn](https://www.youtube.com/watch?v=u8GYd7EEBnQ)**
