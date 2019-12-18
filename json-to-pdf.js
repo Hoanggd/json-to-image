@@ -513,14 +513,18 @@ function handler(data, isMerge) {
       } else {
         if (isMerge) {
           var customeNameError = mergeExport(doc, variant, theOutputPath);
-          throw new Error(customeNameError);
+          if (customeNameError) {
+            throw new Error(customeNameError);
+          }
         } else {
           var customeNameError = normalExport(doc, variant, theOutputPath);
-          throw new Error(customeNameError);
+          if (customeNameError) {
+            throw new Error(customeNameError);
+          }
         }
       }
     } catch (error) {
-      message = message + "\n\n" + error.message;
+      message = message + "\n" + "____________" + "\n\n" + error.message;
     }
   }
   alert(message || "Done!");
@@ -567,7 +571,7 @@ function mergeExport(doc, variant, theOutputPath) {
   pdfSaveOptions = new PDFSaveOptions();
   pdfSaveOptions.preserveEditing = false;
   if (textLayers.length == 1) {
-    var nameError = '\n- INVALID PERSONALIZED NAME: ';
+    var nameError = '';
     for (i = 0; i < names.length; i++) {
       try {
         var reg = /^[\w\s\d.`~,_=+\-!@#$%^&()']+$/;
@@ -602,7 +606,9 @@ function mergeExport(doc, variant, theOutputPath) {
         nameError = nameError + "\n   " + error.message;
       }
     }
-    return variant.name + nameError;
+    if (nameError) {
+      return variant.name + '- INVALID PERSONALIZED NAME:' + nameError;
+    }
   }
 }
 
@@ -614,7 +620,7 @@ function normalExport(doc, variant, theOutputPath) {
 
   pdfSaveOptions = new PDFSaveOptions();
   if (textLayers.length == 1) {
-    var nameError = "\n- INVALID PERSONALIZED NAME: ";
+    var nameError = "";
     for (i = 0; i < names.length; i++) {
       try {
         var reg = /^[\w\s\d.`~,_=+\-!@#$%^&()']+$/;
@@ -644,7 +650,9 @@ function normalExport(doc, variant, theOutputPath) {
         nameError = nameError + "\n   " + error.message;
       }
     }
-    return variant.name + nameError;
+    if (nameError) {
+      return variant.name + '- INVALID PERSONALIZED NAME:' + nameError;
+    }
   }
 }
 
