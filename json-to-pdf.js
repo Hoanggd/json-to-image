@@ -570,7 +570,7 @@ function mergeExport(doc, variant, theOutputPath) {
     var nameError = '\n- INVALID PERSONALIZED NAME: ';
     for (i = 0; i < names.length; i++) {
       try {
-        var reg = /^[\w\s\d.`~,_=+\-!@#$%^&()]+$/;
+        var reg = /^[\w\s\d.`~,_=+\-!@#$%^&()']+$/;
         if (!reg.test(names[i])) {
           throw new Error(names[i]);
         }
@@ -617,7 +617,7 @@ function normalExport(doc, variant, theOutputPath) {
     var nameError = "\n- INVALID PERSONALIZED NAME: ";
     for (i = 0; i < names.length; i++) {
       try {
-        var reg = /^[\w\s\d.`~,_=+\-!@#$%^&()]+$/;
+        var reg = /^[\w\s\d.`~,_=+\-!@#$%^&()']+$/;
         if (!reg.test(names[i])) {
           throw new Error(names[i]);
         }
