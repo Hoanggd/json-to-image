@@ -505,7 +505,7 @@ function handler(data, isMerge) {
   for (k = 0; k < docs.length; k++) {
     try {
       var doc = docs[k];
-      var docName = doc.name.split(".")[0];
+      var docName = doc.name.split('.psd').join('').split('.pdf').join('');
       var variant = findVariant(docName, data);
 
       if (!variant) {

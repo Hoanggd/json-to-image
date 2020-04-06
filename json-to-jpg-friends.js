@@ -493,9 +493,9 @@ if (typeof JSON !== "object") {
 // ---------------- tool -----------------
 
 function main() {
-  var isMerge = showDialog();
+  // var isMerge = showDialog();
   var data = getData();
-  handler(data, isMerge);
+  handler(data, true);
 }
 
 function handler(data, isMerge) {
@@ -505,7 +505,7 @@ function handler(data, isMerge) {
   for (k = 0; k < docs.length; k++) {
     try {
       var doc = docs[k];
-      var docName = doc.name.split('.psd').join('').split('.pdf').join('');
+      var docName = doc.name.split(".")[0];
       var variant = findVariant(docName, data);
 
       if (!variant) {
@@ -563,14 +563,23 @@ function showDialog() {
 }
 
 function mergeExport(doc, variant, theOutputPath) {
-  app.activeDocument = doc;
+  // app.activeDocument = doc;
   var myDocument = app.activeDocument;
   var textLayers = gettextLayers(myDocument);
   var names = variant.customeNames;
+  var initPos = textLayers[0].textItem.position;
+  var savedState = app.activeDocument.activeHistoryState
 
   pdfSaveOptions = new PDFSaveOptions();
   pdfSaveOptions.preserveEditing = false;
-  if (textLayers.length == 1) {
+
+  jpgSaveOptions = new JPEGSaveOptions();
+  jpgSaveOptions.embedColorProfile = true;
+  jpgSaveOptions.formatOptions = FormatOptions.STANDARDBASELINE;
+  jpgSaveOptions.matte = MatteType.NONE;
+  jpgSaveOptions.quality = 12;
+
+  if (true) {
     var nameError = '';
     for (i = 0; i < names.length; i++) {
       try {
@@ -579,8 +588,12 @@ function mergeExport(doc, variant, theOutputPath) {
           throw new Error(names[i]);
         }
         if (names[i] && reg.test(names[i])) {
-          var historyNumber = app.activeDocument.historyStates.length - 1;
-          textLayers[0].textItem.contents = names[i];
+          // var historyNumber = app.activeDocument.historyStates.length - 1;
+          var dotName = names[i].split(' ').join('')
+
+          splitText(textLayers[0], dotName.split('').join('.'), initPos);
+          // textLayers[0].textItem.contents = names[i];
+         
           myDocument.rasterizeAllLayers();
           myDocument.saveAs(
             new File(
@@ -595,11 +608,10 @@ function mergeExport(doc, variant, theOutputPath) {
                 "]" +
                 ".pdf"
             ),
-            pdfSaveOptions,
+            jpgSaveOptions,
             true
           );
-          myDocument.activeHistoryState =
-            myDocument.historyStates[historyNumber];
+          myDocument.activeHistoryState = savedState;
           app.purge(PurgeTarget.HISTORYCACHES);
         }
       } catch (error) {
@@ -619,6 +631,12 @@ function normalExport(doc, variant, theOutputPath) {
   var names = variant.customeNames;
 
   pdfSaveOptions = new PDFSaveOptions();
+  jpgSaveOptions = new JPEGSaveOptions();
+  jpgSaveOptions.embedColorProfile = true;
+  jpgSaveOptions.formatOptions = FormatOptions.STANDARDBASELINE;
+  jpgSaveOptions.matte = MatteType.NONE;
+  jpgSaveOptions.quality = 12;
+
   if (textLayers.length == 1) {
     var nameError = "";
     for (i = 0; i < names.length; i++) {
@@ -642,7 +660,7 @@ function normalExport(doc, variant, theOutputPath) {
                 "]" +
                 ".pdf"
             ),
-            pdfSaveOptions,
+            jpgSaveOptions,
             true
           );
         }
@@ -684,6 +702,59 @@ function getData() {
   content = JSON.parse(jsonFile.read());
   jsonFile.close();
   return content;
+}
+
+function splitText(layerText, textContent, initPos) {
+  //   doc = app.activeDocument;
+  // var layerText = doc.activeLayer;
+  var color = [
+    [180, 55, 78],
+    [228, 233, 141],
+    [147, 193, 226]
+  ];
+
+  $.writeln('layer text: ' + layerText)
+  $.writeln('text content: ' + textContent)
+  $.writeln('initPos: ' + initPos)
+  $.writeln('----------')
+
+  var l = textContent.length
+
+  //   var text = layer.textItem.contents;
+  var size = layerText.textItem.size;
+  var textArray = textContent.split("");
+
+  var posX = initPos[0].value - ((size.value/4)*l) + size.value/5;
+  var posY = initPos[1].value;
+
+  layerText.textItem.contents = textArray[0];
+  layerText.name = textArray[0];
+  layerText.textItem.position = [posX, posY];
+
+  var currentColor = 0;
+  for (var k = 1; k < textArray.length; k++) {
+    tmp = layerText.duplicate();
+    tmp.textItem.position = [posX + (size * k) / 2, posY];
+    tmp.textItem.contents = textArray[k];
+
+    if (k % 2 != 0) {
+      textColor = new SolidColor();
+      textColor.rgb.red = color[currentColor][0];
+      textColor.rgb.green = color[currentColor][1];
+      textColor.rgb.blue = color[currentColor][2];
+
+      tmp.textItem.color = textColor;
+
+
+      if (currentColor == 0) {
+        currentColor = 1;
+      } else if (currentColor == 1) {
+        currentColor = 2;
+      } else if (currentColor == 2) {
+        currentColor = 0;
+      }
+    }
+  }
 }
 
 main();
