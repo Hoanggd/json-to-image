@@ -598,8 +598,8 @@ function mergeExport(doc, variant, theOutputPath) {
         }
         myDocument.rasterizeAllLayers();
         myDocument.saveAs(
-          new File(theOutputPath + "/" + fileName + ".png"),
-          pngSaveOptions,
+          new File(theOutputPath + "/" + fileName + ".jpg"),
+          jpgSaveOptions,
           true
         );
         myDocument.activeHistoryState = myDocument.historyStates[historyNumber]; //reset history
