@@ -491,11 +491,16 @@ if (typeof JSON !== "object") {
 
 function main() {
   // var isMerge = showDialog();
-  var data = getData();
-  handler(data, true);
+  var formats = chooseFormat();
+  if (formats.length) {
+    var data = getData();
+    handler(data, true, formats);
+  } else {
+    alert('Thieu dinh dang file')
+  }
 }
 
-function handler(data, isMerge) {
+function handler(data, isMerge, formats) {
   var theOutputPath = Folder.selectDialog("Chon thu muc luu file");
   var docs = app.documents;
   var message = "";
@@ -509,7 +514,7 @@ function handler(data, isMerge) {
         throw new Error(docName + ": ten file khong hop le");
       } else {
         if (isMerge) {
-          var customeNameError = mergeExport(doc, variant, theOutputPath);
+          var customeNameError = mergeExport(doc, variant, theOutputPath, formats);
           if (customeNameError) {
             throw new Error(customeNameError);
           }
@@ -559,16 +564,17 @@ function showDialog() {
   else return false;
 }
 
-function mergeExport(doc, variant, theOutputPath) {
+function mergeExport(doc, variant, theOutputPath, formats) {
+  $.writeln(formats)
   app.activeDocument = doc;
   var myDocument = app.activeDocument;
   var textLayers = gettextLayers(myDocument);
   var names = variant.customeNames;
 
-  pdfSaveOptions = new PDFSaveOptions();
+  var pdfSaveOptions = new PDFSaveOptions();
   pdfSaveOptions.preserveEditing = false;
 
-  jpgSaveOptions = new JPEGSaveOptions();
+  var jpgSaveOptions = new JPEGSaveOptions();
   jpgSaveOptions.embedColorProfile = true;
   jpgSaveOptions.formatOptions = FormatOptions.STANDARDBASELINE;
   jpgSaveOptions.matte = MatteType.NONE;
@@ -577,31 +583,41 @@ function mergeExport(doc, variant, theOutputPath) {
   var pngSaveOptions = new PNGSaveOptions();
   pngSaveOptions.compression = 5;
 
-  // textLayers.length == 1
+  var formatCollection = {
+    pdf: pdfSaveOptions,
+    jpg: jpgSaveOptions,
+    png: pngSaveOptions
+  }
 
   var nameError = "";
-  for (i = 0; i < names.length; i++) {
-    var name = names[i];
+  for (var j = 0; j < names.length; j++) {
+    //nameItem = {id: 123, name: []}
+    var nameItem = names[j];
     try {
-      var reg = /^[\w\s\d.`~,_=+\-!@#$%^&()']+$/;
-      for (var key in name) {
-        if (!reg.test(name[key])) {
-          throw new Error(name[key]);
+      var reg = /[\w\s\d.`~,_=+\-!@#$%^&()']+/g;
+      
+      var nameError = false;
+      for (var i = 0; i < nameItem.name; i++) {
+        if (!reg.test(nameItem[i])) {
+          nameError = true;
+          throw new Error(name[i]);
         }
       }
-      if (name && reg.test(name[key])) {
+      if (true) {
         var historyNumber = app.activeDocument.historyStates.length - 1; // history number
-        var fileName = "[" + variant.name + "].[" + variant.id + "]";
+        var fileName = "[" + variant.name + "].[" + nameItem.id + "]";
         for (var k = 0; k < textLayers.length; k++) {
-          textLayers[k].textItem.contents = name[k.toString()] + "";
-          fileName += ".[" + name[k.toString()] + "]";
+          textLayers[k].textItem.contents = nameItem.name[k] + "";
+          fileName += ".[" + nameItem.name[k].match(reg).join('') + "]";
         }
         myDocument.rasterizeAllLayers();
-        myDocument.saveAs(
-          new File(theOutputPath + "/" + fileName + ".png"),
-          pngSaveOptions,
-          true
-        );
+        for (var i = 0; i < formats.length; i++) {
+          myDocument.saveAs(
+            new File(theOutputPath + "/" + fileName + "." + formats[i]),
+            formatCollection[formats[i]],
+            true
+          );
+        }
         myDocument.activeHistoryState = myDocument.historyStates[historyNumber]; //reset history
         app.purge(PurgeTarget.HISTORYCACHES);
       }
@@ -693,6 +709,43 @@ function getData() {
   content = JSON.parse(jsonFile.read());
   jsonFile.close();
   return content;
+}
+
+function chooseFormat() {
+  if (!documents.length) {
+    alert("No documents are open!");
+    return;
+  }
+
+  var win = new Window("dialog", "Format");
+  win.orientation = "column";
+  win.alignChildren = "center";
+
+  win.pnl1 = win.add("panel", undefined, "Format", { borderStyle: "black" });
+  win.pnl1.alignChildren = "left";
+
+  win.pnl1.format1 = win.pnl1.add("checkbox", undefined, "JPG");
+  win.pnl1.format1.value = true;
+  win.pnl1.format2 = win.pnl1.add("checkbox", undefined, "PNG");
+  win.pnl1.format2.value = true;
+  win.pnl1.format3 = win.pnl1.add("checkbox", undefined, "PDF");
+
+  win.grp1 = win.add("group");
+  win.select = win.grp1.add("button", undefined, "Ok");
+  win.can = win.grp1.add("button", undefined, "Cancel");
+  win.select.preferredSize = win.can.preferredSize = [70, 20];
+
+  win.center();
+  win.show();
+
+  var formats = ["jpg", "png", "pdf"];
+  var chosenFormats = [];
+  for (var i = 0; i < 3; i++) {
+    if (win.pnl1["format" + (i + 1)].value) {
+      chosenFormats.push(formats[i]);
+    }
+  }
+  return chosenFormats;
 }
 
 main();
