@@ -600,7 +600,7 @@ function mergeExport(doc, variant, theOutputPath, formats) {
       for (var i = 0; i < nameItem.name; i++) {
         if (!reg.test(nameItem[i])) {
           nameError = true;
-          throw new Error(name[i]);
+          throw new Error(nameItem[i]);
         }
       }
       if (true) {
