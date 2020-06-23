@@ -492,13 +492,8 @@ if (typeof JSON !== "object") {
 function main() {
   // var isMerge = showDialog();
   var formats = chooseFormat();
-  $.writeln(formats)
-  if (formats.length) {
-    var data = getData();
-    handler(data, true, formats);
-  } else {
-    alert('Thieu dinh dang file')
-  }
+  var data = getData();
+  handler(data, true, formats);
 }
 
 function handler(data, isMerge, formats) {
@@ -515,7 +510,12 @@ function handler(data, isMerge, formats) {
         throw new Error(docName + ": ten file khong hop le");
       } else {
         if (isMerge) {
-          var customeNameError = mergeExport(doc, variant, theOutputPath, formats);
+          var customeNameError = mergeExport(
+            doc,
+            variant,
+            theOutputPath,
+            formats
+          );
           if (customeNameError) {
             throw new Error(customeNameError);
           }
@@ -565,8 +565,7 @@ function showDialog() {
   else return false;
 }
 
-function mergeExport(doc, variant, theOutputPath, formats) {
-  $.writeln(formats)
+function mergeExport(doc, variant, theOutputPath, format) {
   app.activeDocument = doc;
   var myDocument = app.activeDocument;
   var textLayers = gettextLayers(myDocument);
@@ -584,11 +583,42 @@ function mergeExport(doc, variant, theOutputPath, formats) {
   var pngSaveOptions = new PNGSaveOptions();
   pngSaveOptions.compression = 5;
 
-  var formatCollection = {
+  var extensionCollection = {
     pdf: pdfSaveOptions,
     jpg: jpgSaveOptions,
-    png: pngSaveOptions
-  }
+    png: pngSaveOptions,
+  };
+
+  var capitalize = function (str, lower) {
+    return (lower ? str.toLowerCase() : str).replace(
+      /(?:^|\s|["'([{])+\S/g,
+      function (match) {
+        return match.toUpperCase();
+      }
+    );
+  };
+
+  // var test = capitalize("FIRST NAME 2", true)
+
+  var textTransform = function (text) {
+    switch (format.textTransform) {
+      case 1: {
+        return text;
+      }
+      case 2: {
+        return capitalize(text, true);
+      }
+      case 3: {
+        return text.toUpperCase();
+      }
+      case 4: {
+        return text.toLowerCase();
+      }
+      default: {
+        return;
+      }
+    }
+  };
 
   var nameError = "";
   for (var j = 0; j < names.length; j++) {
@@ -596,31 +626,28 @@ function mergeExport(doc, variant, theOutputPath, formats) {
     var nameItem = names[j];
     try {
       var reg = /[\w\s\d.`~,_=+\-!@#$%^&()']+/g;
-      
-      var nameError = false;
-      for (var i = 0; i < nameItem.name; i++) {
-        if (!reg.test(nameItem[i])) {
-          nameError = true;
-          throw new Error(nameItem[i]);
-        }
+
+      var historyNumber = app.activeDocument.historyStates.length - 1; // history number
+      var fileName = "[" + variant.name + "].[" + nameItem.id + "]";
+      for (var k = 0; k < textLayers.length; k++) {
+        textLayers[k].textItem.contents =
+          textTransform(nameItem.name[k], false) + "";
+        fileName += ".[" + nameItem.name[k].match(reg).join("") + "]";
       }
-      if (true) {
-        var historyNumber = app.activeDocument.historyStates.length - 1; // history number
-        var fileName = "[" + variant.name + "].[" + nameItem.id + "]";
-        for (var k = 0; k < textLayers.length; k++) {
-          textLayers[k].textItem.contents = nameItem.name[k] + "";
-          fileName += ".[" + nameItem.name[k].match(reg).join('') + "]";
+      myDocument.rasterizeAllLayers();
+      myDocument.saveAs(
+        new File(theOutputPath + "/" + fileName + "." + format.extension),
+        extensionCollection[format.extension],
+        true
+      );
+      myDocument.activeHistoryState = myDocument.historyStates[historyNumber]; //reset history
+      app.purge(PurgeTarget.HISTORYCACHES);
+
+      for (var i = 0; i < nameItem.name.length; i++) {
+        var reg2 = /^[\w\s\d.`~,_=+\-!@#$%^&()']+$/;
+        if (!reg2.test(nameItem.name[i])) {
+          throw new Error(nameItem.name[i]);
         }
-        myDocument.rasterizeAllLayers();
-        for (var i = 0; i < formats.length; i++) {
-          myDocument.saveAs(
-            new File(theOutputPath + "/" + fileName + "." + formats[i]),
-            formatCollection[formats[i]],
-            true
-          );
-        }
-        myDocument.activeHistoryState = myDocument.historyStates[historyNumber]; //reset history
-        app.purge(PurgeTarget.HISTORYCACHES);
       }
     } catch (error) {
       nameError = nameError + "\n   " + error.message;
@@ -723,7 +750,9 @@ function chooseFormat() {
   win.alignChildren = "center";
 
   win.pnl1 = win.add("panel", undefined, "Extension", { borderStyle: "black" });
-  win.pnl2 = win.add("panel", undefined, "Text Transform", { borderStyle: "black" });
+  win.pnl2 = win.add("panel", undefined, "Text Transform", {
+    borderStyle: "black",
+  });
 
   win.pnl1.alignChildren = "left";
   win.pnl2.alignChildren = "left";
@@ -736,7 +765,7 @@ function chooseFormat() {
   win.pnl2.format1 = win.pnl2.add("radiobutton", undefined, "Default");
   win.pnl2.format2 = win.pnl2.add("radiobutton", undefined, "Capitalize");
   win.pnl2.format3 = win.pnl2.add("radiobutton", undefined, "UPPERCASE");
-  win.pnl2.format3 = win.pnl2.add("radiobutton", undefined, "lowercase");
+  win.pnl2.format4 = win.pnl2.add("radiobutton", undefined, "lowercase");
   win.pnl2.format1.value = true;
 
   win.grp1 = win.add("group");
@@ -756,7 +785,12 @@ function chooseFormat() {
   }
 
   return {
-    formats: chooseFormats,
+    extension: chosenFormats[0],
+    textTransform:
+      (win.pnl2.format1.value && 1) ||
+      (win.pnl2.format2.value && 2) ||
+      (win.pnl2.format3.value && 3) ||
+      (win.pnl2.format4.value && 4),
   };
 }
 
